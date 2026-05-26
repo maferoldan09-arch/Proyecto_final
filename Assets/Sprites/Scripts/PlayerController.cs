@@ -5,6 +5,8 @@ public class PlayerController : MonoBehaviour
     [Header("Configuración de Movimiento")]
     public float moveSpeed = 5f;    // Velocidad de movimiento horizontal
     public float jumpForce = 10f;   // Fuerza del salto
+    
+    public Animator  animator;
 
     [Header("Configuración de Suelo")]
     public Transform groundCheck;         // Un GameObject vacío puesto a los pies del jugador
