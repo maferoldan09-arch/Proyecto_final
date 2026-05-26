@@ -1,91 +1,118 @@
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    [Header("Configuración de Movimiento")]
-    public float moveSpeed = 5f;    // Velocidad de movimiento horizontal
-    public float jumpForce = 10f;   // Fuerza del salto
-    
-    public Animator  animator;
+    public float velocidad = 5f;
+    public int vida = 3;
 
-    [Header("Configuración de Suelo")]
-    public Transform groundCheck;         // Un GameObject vacío puesto a los pies del jugador
-    public LayerMask groundLayer;         // La capa que define que es "suelo"
-    public float groundCheckRadius = 0.2f; // Radio del circulo para detectar el suelo
+    public float fuerzaSalto = 10f; 
+    public float fuerzaRebote = 6f; 
+    public float longitudRaycast = 0.1f; 
+    public LayerMask capaSuelo; 
 
-    // Componentes y variables privadas
-    private Rigidbody2D rb;
-    private float horizontalInput;
-    private bool isGrounded;
-    private bool isFacingRight = true; // Para saber hacia donde mira el personaje
+    private bool enSuelo; 
+    private bool recibiendoDanio;
+    private bool atacando;
+    public bool muerto;
 
-    // Start se llama una vez al inicio
+    private Rigidbody2D rb; 
+
+    public Animator animator;
+    // Start is called before the first frame update
     void Start()
     {
-        // Obtenemos el componente Rigidbody2D para poder usar físicas
         rb = GetComponent<Rigidbody2D>();
     }
 
-    // Update se llama una vez por frame (ideal para inputs)
+    // Update is called once per frame
     void Update()
     {
-        // 1. OBTENER INPUT HORIZONTAL
-        // Input.GetAxis("Horizontal") usa las teclas A/D y las flechas izquierda/derecha
-        // Devuelve un valor entre -1 (izquierda) y 1 (derecha)
-        horizontalInput = Input.GetAxis("Horizontal");
-
-        // 2. DETECTAR SALTO
-        // Input.GetButtonDown("Jump") detecta la barra espaciadora (por defecto en Unity)
-        // Solo podemos saltar si "isGrounded" es verdadero
-        if (Input.GetKeyDown(KeyCode.Space))
+        if (!muerto)
         {
-            // Aplicamos una fuerza vertical instantánea
-            // Usamos VelocityChange para ignorar la masa del jugador y dar un salto consistente
-            rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
+            if (!atacando)
+            {
+                Movimiento();
+
+                RaycastHit2D hit = Physics2D.Raycast(transform.position, Vector2.down, longitudRaycast, capaSuelo);
+                enSuelo = hit.collider != null;
+
+                if (enSuelo && Input.GetKeyDown(KeyCode.Space) && !recibiendoDanio)
+                {
+                    rb.AddForce(new Vector2(0f, fuerzaSalto), ForceMode2D.Impulse);
+                }
+            }
+
+            if (Input.GetKeyDown(KeyCode.Z) && !atacando && enSuelo)
+            {
+                Atacando();
+            }
+        }
+        
+        animator.SetBool("ensuelo", enSuelo);
+        animator.SetBool("recibeDanio", recibiendoDanio);
+        animator.SetBool("Atacando", atacando);
+        animator.SetBool("muerto", muerto);
+    }
+       
+    public void Movimiento()
+    {
+        float velocidadX = Input.GetAxis("Horizontal") * Time.deltaTime * velocidad;
+
+        animator.SetFloat("movement", Mathf.Abs(velocidadX * velocidad));
+
+        if (velocidadX < 0)
+        {
+            transform.localScale = new Vector3(-1, 1, 1);
+        }
+        if (velocidadX > 0)
+        {
+            transform.localScale = new Vector3(1, 1, 1);
         }
 
-        // 3. VOLTEAR EL SPRITE
-        FlipSprite();
+        Vector3 posicion = transform.position;
+
+        if (!recibiendoDanio)
+            transform.position = new Vector3(velocidadX + posicion.x, posicion.y, posicion.z);
     }
-
-    // FixedUpdate se llama en un intervalo fijo (ideal para físicas)
-    void FixedUpdate()
+    public void RecibeDanio(Vector2 direccion, int cantDanio)
     {
-        // 4. COMPROBAR SI ESTÁ EN EL SUELO
-        // Dibuja un círculo invisible en la posici�n de 'groundCheck'
-        // Si ese círculo toca algo en la 'groundLayer', isGrounded es true
-        isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
-
-        // 5. APLICAR MOVIMIENTO HORIZONTAL
-        // Movemos el Rigidbody cambiando su velocidad (velocity)
-        // Mantenemos la velocidad vertical (rb.velocity.y) para que la gravedad y el salto sigan funcionando
-        rb.linearVelocity = new Vector2(horizontalInput * moveSpeed, rb.linearVelocity.y);
-    }
-
-    // Funci�n para voltear el sprite del jugador
-    void FlipSprite()
-    {
-        // Si nos movemos a la izquierda (input < 0) pero miramos a la derecha (isFacingRight = true)
-        if (horizontalInput < 0 && isFacingRight)
+        if(!recibiendoDanio)
         {
-            // Volteamos al jugador
-            transform.localScale = new Vector3(-1 * transform.localScale.x, transform.localScale.y, transform.localScale.z);
-            isFacingRight = false; // Ahora miramos a la izquierda
-        }
-        // Si nos movemos a la derecha (input > 0) pero miramos a la izquierda (isFacingRight = false)
-        else if (horizontalInput > 0 && !isFacingRight)
-        {
-            // Volteamos al jugador
-            transform.localScale = new Vector3(-1 * transform.localScale.x, transform.localScale.y, transform.localScale.z);
-            isFacingRight = true; // Ahora miramos a la derecha
+            recibiendoDanio = true;
+            vida -= cantDanio;
+            if (vida<=0)
+            {
+                muerto = true;
+            }
+            if (!muerto)
+            {
+                Vector2 rebote = new Vector2(transform.position.x - direccion.x, 0.2f).normalized;
+                rb.AddForce(rebote * fuerzaRebote, ForceMode2D.Impulse);
+            }
         }
     }
 
-    // (Opcional) Dibuja el círculo de groundCheck en el editor para que puedas verlo
-    void OnDrawGizmosSelected()
+    public void DesactivaDanio()
     {
-        if (groundCheck == null) return;
+        recibiendoDanio = false;
+        rb.linearVelocity = Vector2.zero;
+    }
+
+    public void Atacando()
+    {
+        atacando = true;
+    }
+
+    public void DesactivaAtaque()
+    {
+        atacando = false;
+    }
+
+    void OnDrawGizmos()
+    {
         Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
+        Gizmos.DrawLine(transform.position, transform.position + Vector3.down * longitudRaycast);
     }
 }
