@@ -9,7 +9,7 @@ public class Dialogue : MonoBehaviour
     [SerializeField] private TMP_Text dialogueText;
 
     [Header("Dialogue")]
-    [SerializeField, TextArea(4,6)] 
+    [SerializeField, TextArea(4,6)]
     private string[] dialogueLines;
 
     [SerializeField] private float typingTime = 0.05f;
@@ -20,30 +20,26 @@ public class Dialogue : MonoBehaviour
 
     private void Start()
     {
-        // El panel inicia apagado
         dialoguePanel.SetActive(false);
     }
 
     private void Update()
     {
-        // Si el jugador está cerca y presiona E
-        if (isPlayerInRange && Input.GetKeyDown(KeyCode.E))
+        if (!didDialogueStart)
+            return;
+
+        if (Input.GetKeyDown(KeyCode.E))
         {
-            // Si el diálogo no ha empezado
-            if (!didDialogueStart)
-            {
-                StartDialogue();
-            }
-            // Si la línea ya terminó de escribirse
-            else if (dialogueText.text == dialogueLines[lineIndex])
+            if (dialogueText.text == dialogueLines[lineIndex])
             {
                 NextDialogueLine();
             }
-            // Completa instantáneamente la línea
             else
             {
                 StopAllCoroutines();
-                dialogueText.text = dialogueLines[lineIndex];
+
+                dialogueText.text =
+                    dialogueLines[lineIndex];
             }
         }
     }
@@ -75,6 +71,8 @@ public class Dialogue : MonoBehaviour
 
     private void EndDialogue()
     {
+        StopAllCoroutines();
+
         didDialogueStart = false;
 
         dialoguePanel.SetActive(false);
@@ -84,27 +82,38 @@ public class Dialogue : MonoBehaviour
 
     private IEnumerator ShowLine()
     {
-        dialogueText.text = string.Empty;
+        dialogueText.text = "";
 
         foreach (char ch in dialogueLines[lineIndex])
         {
             dialogueText.text += ch;
 
-            yield return new WaitForSeconds(typingTime);
+            yield return new WaitForSeconds(
+                typingTime
+            );
         }
     }
 
-    private void OnTriggerEnter2D(Collider2D collision)
+    private void OnTriggerEnter2D(
+        Collider2D collision)
     {
         if (collision.CompareTag("Player"))
         {
             isPlayerInRange = true;
 
-            Debug.Log("Jugador cerca del NPC");
+            Debug.Log(
+                "Jugador cerca del NPC"
+            );
+
+            if (!didDialogueStart)
+            {
+                StartDialogue();
+            }
         }
     }
 
-    private void OnTriggerExit2D(Collider2D collision)
+    private void OnTriggerExit2D(
+        Collider2D collision)
     {
         if (collision.CompareTag("Player"))
         {
@@ -112,7 +121,9 @@ public class Dialogue : MonoBehaviour
 
             EndDialogue();
 
-            Debug.Log("Jugador salió del NPC");
+            Debug.Log(
+                "Jugador salió del NPC"
+            );
         }
     }
 }
