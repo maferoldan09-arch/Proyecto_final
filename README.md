@@ -8,7 +8,7 @@ KyneRun es un juego de plaaformas donde seguimos a un personaje llamado Ash, qui
 - [Plataforma movil](Plataformamovil)
 - [Animación en Coleccionables y en menú principal](Animaciones)
 
-## Parallax
+## [Parallax](Parallax)
 
 Un parallax sirve para darle profuncidad al fondo de un gamplay, poniendo capas en el eje Z donde se ponen varios dibujos a diferentes distancias y luego mediante el codigo, se iran moviendo a diferentes velocidades, dandole mayor realimso al movimiento, además de funcionar el loop, lo que hace que se repita el mismo fondo durante todo el nivel.
 
