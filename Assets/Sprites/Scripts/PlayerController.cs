@@ -74,7 +74,9 @@ public class PlayerController : MonoBehaviour
 
     public void Movimiento()
     {
-        float velocidadX = Input.GetAxis("Horizontal") * Time.deltaTime * velocidad;
+        float velocidadX = Input.GetAxis("Horizontal");
+
+        rb.linearVelocity = new Vector2(velocidadX * velocidad, rb.linearVelocity.y);
 
         animator.SetFloat("movement", Mathf.Abs(velocidadX * velocidad));
 
@@ -87,10 +89,6 @@ public class PlayerController : MonoBehaviour
         {
             transform.localScale = new Vector3(1, 1, 1);
         }
-
-        Vector3 posicion = transform.position;
-
-        transform.position = new Vector3(velocidadX + posicion.x, posicion.y, posicion.z);
     }
 
     public void Morir()
